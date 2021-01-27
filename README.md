@@ -21,7 +21,7 @@ What VSCode expects (as well as Webstorm to a limited degree):
  */
 ```
 
-This plugin adds hooks to jsdoc that translates the VSCode supported syntax into the JSDoc supported syntax.
+This plugin adds hooks to JSDoc that translates the VSCode supported syntax into the JSDoc supported syntax.
 
 ### Why?
 
@@ -64,10 +64,22 @@ Then in your `jsdoc.conf.json` settings, add the plugin:
 ]
 ```
 
-If everything is working, when you run jsdoc you should get a linkable definition for your type.
+If everything is working, when you run `jsdoc` you should get a linkable definition for your type.
+Example:
 
 | Name  | Type | Description |
 | ------------- | ------------- | -------------- |
 | data  | [module:model~ParticleEffectVo](#)  | The model used to construct this particle effect. |
+
+### Known Limitations
+
+In Webstorm, the Typescript import syntax is only partially supported. It will not type hint for local files this way. However, the JSDoc module syntax is entirely unsupported, and will show error markers, so this is still an improvement.
+
+### References
+
+This references the issues:
+https://github.com/jsdoc/jsdoc/issues/1537
+https://github.com/jsdoc/jsdoc/issues/1645
+https://github.com/jsdoc/jsdoc/issues/1632
 
 
