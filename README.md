@@ -78,8 +78,8 @@ In Webstorm, the Typescript import syntax is only partially supported. It will n
 ### References
 
 This references the issues:
-- [https://github.com/jsdoc/jsdoc/issues/1537]
-- [https://github.com/jsdoc/jsdoc/issues/1645]
-- [https://github.com/jsdoc/jsdoc/issues/1632]
+- https://github.com/jsdoc/jsdoc/issues/1537
+- https://github.com/jsdoc/jsdoc/issues/1645
+- https://github.com/jsdoc/jsdoc/issues/1632
 
 
