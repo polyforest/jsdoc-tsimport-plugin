@@ -1,0 +1,35 @@
+{
+	"env": {
+		"browser": true,
+		"es2020": true
+	},
+	"extends": [
+		"google",
+		"plugin:jsdoc/recommended"
+	],
+	"parserOptions": {
+		"sourceType": "module"
+	},
+	"plugins": ["jsdoc"],
+	"rules": {
+		"linebreak-style": "off",
+		"indent": "off",
+		"padded-blocks": [
+			"error",
+			{
+				"classes": "always",
+				"switches": "never",
+				"blocks": "never"
+			},
+			{
+				"allowSingleLineBlocks": true
+			}
+		],
+		"valid-jsdoc": "off"
+	},
+	"settings": {
+		"jsdoc": {
+			"mode": "typescript"
+		}
+	}
+}
