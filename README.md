@@ -64,3 +64,10 @@ Then in your `jsdoc.conf.json` settings, add the plugin:
 ]
 ```
 
+If everything is working, when you run jsdoc you should get a linkable definition for your type.
+
+| Name  | Type | Description |
+| ------------- | ------------- | -------------- |
+| data  | [module:model~ParticleEffectVo](#)  | The model used to construct this particle effect. |
+
+
