@@ -73,7 +73,7 @@ Example:
 
 ### Known Limitations
 
-In Webstorm, the Typescript import syntax is only partially supported. It will not type hint for local files this way. However, the JSDoc module syntax is entirely unsupported, and will show error markers, so this is still an improvement.
+In Webstorm, the Typescript import syntax is only partially supported. It will not type hint for local files this way. However, the JSDoc module syntax is entirely unsupported and shows error markers, so this is still an improvement.
 
 ### References
 
