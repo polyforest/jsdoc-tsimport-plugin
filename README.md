@@ -72,7 +72,7 @@ Example:
 
 | Name  | Type | Description |
 | ------------- | ------------- | -------------- |
-| shippingAddress  | [module:model~Address(#)  | The shipping address. |
+| shippingAddress  | [module:model~Address](#)  | The shipping address. |
 
 ### Considerations
 
