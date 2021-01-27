@@ -77,6 +77,21 @@ Example:
 | ------------- | ------------- | -------------- |
 | shippingAddress  | [module:model~Address](#)  | The shipping address. |
 
+#### ESLint
+
+If you're using ESLint, you'll need to set your jsdoc style to 'typescript'.
+
+`.eslintrc.json`
+```json
+{
+	"settings": {
+		"jsdoc": {
+			"mode": "typescript"
+		}
+	}
+}
+```
+
 ### Considerations
 
 This will take into account `@module` tags, multiple source directories, and complex paths.
