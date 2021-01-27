@@ -1,6 +1,9 @@
 # jsdoc-tsimport-plugin
 A JSDoc plugin to support the Typescript import syntax.
 
+[![NPM Package](https://img.shields.io/npm/v/jsdoc-tsimport-plugin)](https://www.npmjs.com/package/jsdoc-tsimport-plugin)
+[![NPM Downloads](https://img.shields.io/npm/dw/jsdoc-tsimport-plugin)](https://www.npmtrends.com/jsdoc-tsimport-plugin)
+
 ### What is it?
 
 A workaround to VSCode and WebStorm not supporting JSDoc typedef imports.
