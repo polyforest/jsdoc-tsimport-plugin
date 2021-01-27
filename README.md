@@ -79,16 +79,24 @@ Example:
 
 #### ESLint
 
-If you're using ESLint, you'll need to set your jsdoc style to 'typescript'.
+If you're using ESLint, we recommend turning the built-in jsdoc validation off (it's deprecated anyway), and using [eslint-plugin-jsdoc](https://www.npmjs.com/package/eslint-plugin-jsdoc).
+And then set your jsdoc style to 'typescript'.
 
 `.eslintrc.json`
 ```json
 {
-	"settings": {
-		"jsdoc": {
-			"mode": "typescript"
-		}
-	}
+  "extends": [
+    "plugin:jsdoc/recommended"
+  ],
+  "plugins": ["jsdoc"],
+  "rules": {
+    "valid-jsdoc": "off"
+  },
+  "settings": {
+    "jsdoc": {
+      "mode": "typescript"
+    }
+  }
 }
 ```
 
