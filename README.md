@@ -27,8 +27,24 @@ This plugin adds hooks to JSDoc that translates the VSCode supported syntax into
 
 This allows you to create typedef doclets in a file that can be shared. Just use the typescript-style imports within your doc comments, and then the plugin will translate when you build your jsdocs. This is preferable to adding unused es6/commonjs imports to your code, which may cause unintended side-effects, or fail linting requirements.
 
+### How?
+
+To get started, first install this package with:
+```npm install --save-dev jsdoc-tsimport-plugin```
+
+Then in your `jsdoc.conf.json` settings, add the plugin:
+
 ```
-// src/model.js
+"plugins": [
+  "node_modules/jsdoc-tsimport-plugin/index.js"
+]
+```
+
+Then, write your doc comment typedef import statements in the typescript style.
+
+```js
+/// src/model.js
+
 /** @file Model type definitions */
 /** @module */
 
@@ -45,23 +61,10 @@ This allows you to create typedef doclets in a file that can be shared. Just use
  */
 ```
 
-```
-// src/addressView.js
+```js
+/// src/addressView.js
 
-/** @typedef {import(./model.js).Address} Address
-```
-
-### How?
-
-To get started, first install this package with:
-```npm install --save-dev jsdoc-tsimport-plugin```
-
-Then in your `jsdoc.conf.json` settings, add the plugin:
-
-```
-"plugins": [
-  "node_modules/jsdoc-tsimport-plugin/index.js"
-]
+/** @typedef {import('./model.js').Address} Address
 ```
 
 If everything is working, when you run `jsdoc` you should get a linkable definition for your type.
@@ -69,7 +72,37 @@ Example:
 
 | Name  | Type | Description |
 | ------------- | ------------- | -------------- |
-| data  | [module:model~ParticleEffectVo](#)  | The model used to construct this particle effect. |
+| shippingAddress  | [module:model~Address(#)  | The shipping address. |
+
+### Considerations
+
+This will take into account `@module` tags, multiple source directories, and complex paths.
+
+For example:
+
+```js
+/// src/path/a/model.js
+
+/** @module call/me/ishmael */
+
+/**
+ * Another type definition.
+ *
+ * @typedef {object} MyType
+ * @property {number} foo
+ */
+```
+
+```js
+/// src/path/b/view.js
+
+/**
+ * @param {import('../a/model').MyType} data
+ */
+function show(data) {}
+```
+
+In that example the `import('../a/model').MyType` will be replaced in jsdoc with `module:call/me/ishmael~MyType`.
 
 ### Known Limitations
 
