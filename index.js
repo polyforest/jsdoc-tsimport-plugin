@@ -21,7 +21,7 @@ const absSrcDirs = env.opts._.map((iSrcDir) => path.join(env.pwd, iSrcDir));
 /**
  * A regex to capture all doc comments.
  */
-const docCommentsRegex = /\/\*\*\s*(?:[^\*]|(?:\*(?!\/)))*\*\//g
+const docCommentsRegex = /\/\*\*\s*(?:[^\*]|(?:\*(?!\/)))*\*\//g;
 
 /**
  * Find the module name.
@@ -39,9 +39,9 @@ const typedefRegex = /@typedef\s*(?:\{[^}]*\})\s*([\w-\$]*)/g;
  */
 const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
 
-const typeRegex = /\{[^}]*\}/g
+const typeRegex = /\{[^}]*\}/g;
 
-const identifiers = /([\w-\$]+)/g
+const identifiers = /([\w-\$]+)/g;
 
 /**
  * @typedef {object} FileInfo
@@ -52,31 +52,30 @@ const identifiers = /([\w-\$]+)/g
 
 /**
  * A map of filenames to module ids.
- * 
+ *
  * @type {Map<string, FileInfo>}
  */
 const fileInfos = new Map();
 
 /**
  * A map of moduleId to type definition ids.
- * 
+ *
  * @type {Map<string, Set<string>>}
  */
 const moduleToTypeDefs = new Map();
 
 /**
  * Retrieves and caches file information for this plugin.
- * 
- * 
- * @param {string} filename 
- * @param {?string} source 
+ *
+ * @param {string} filename
+ * @param {?string} source
  * @returns {!FileInfo}
  */
 function getFileInfo(filename, source = null) {
   const filenameNor = path.normalize(filename);
-  if (fileInfos.has(filenameNor)) return fileInfos.get(filenameNor)
+  if (fileInfos.has(filenameNor)) return fileInfos.get(filenameNor);
   const fileInfo = /** @type {FileInfo} */ ({
-    moduleId: null, typedefs: [], filename: filenameNor
+    moduleId: null, typedefs: [], filename: filenameNor,
   });
 
   const s = source || (fs.readFileSync(filenameNor).toString());
@@ -87,7 +86,8 @@ function getFileInfo(filename, source = null) {
       if (moduleNameMatch) {
         if (!moduleNameMatch[1]) {
           // @module tag with no module name; calculate the implicit module id.
-          const srcDir = absSrcDirs.find((iSrcDir) => filenameNor.startsWith(iSrcDir));
+          const srcDir = absSrcDirs.find((iSrcDir) =>
+            filenameNor.startsWith(iSrcDir));
           fileInfo.moduleId = noExtension(filenameNor)
             .slice(srcDir.length + 1).replace(/\\/g, '/');
         } else {
@@ -99,7 +99,7 @@ function getFileInfo(filename, source = null) {
     comment.replace(typedefRegex, (_substr, defName) => {
       fileInfo.typedefs.push(defName);
       return '';
-    })
+    });
     return '';
   });
   if (!fileInfo.moduleId) {
@@ -111,10 +111,12 @@ function getFileInfo(filename, source = null) {
     moduleToTypeDefs.set(fileInfo.moduleId, new Set());
   }
   const typeDefsSet = moduleToTypeDefs.get(fileInfo.moduleId);
-  fileInfo.typedefs.forEach((item) => { typeDefsSet.add(item) });
+  fileInfo.typedefs.forEach((item) => {
+    typeDefsSet.add(item);
+  });
 
   fileInfos.set(filenameNor, fileInfo);
-  return fileInfo
+  return fileInfo;
 }
 
 
@@ -124,19 +126,18 @@ function getFileInfo(filename, source = null) {
  * @param {FileEvent} e The event.
  */
 function beforeParse(e) {
-  const fileInfo = getFileInfo(e.filename, e.source);
+  getFileInfo(e.filename, e.source);
 
   // Find all doc comments (unfortunately needs to be done here and not
   // in jsDocCommentFound or there will be errors)
   e.source = e.source.replace(docCommentsRegex,
     (substring) => {
-      let newComment = substring.replace(importRegex, (_substring2, relImportPath, symbolName) => {
+      return substring.replace(importRegex,
+        (_substring2, relImportPath, symbolName) => {
         const moduleId = getModuleId(e.filename, relImportPath);
         return (moduleId) ? `module:${moduleId}~${symbolName}` : symbolName;
-      })
-      return newComment;
+      });
     });
-
 };
 
 /**
@@ -160,8 +161,9 @@ function getModuleId(filename, relImportPath) {
 /**
  * Returns the normalized, absolute path of `relative` to `root.
  *
- * @param {string} root 
- * @param {string} relative 
+ * @param {string} root
+ * @param {string} relative
+ * @returns {string}
  */
 function relPath(root, relative) {
   if (path.isAbsolute(relative)) return relative;
@@ -170,20 +172,23 @@ function relPath(root, relative) {
 }
 
 /**
- * Given a filename, if there is no extension, scan the files for the most likely match.
+ * Given a filename, if there is no extension, scan the files for the 
+ * most likely match.
  *
- * @param {string} filename 
+ * @param {string} filename
+ * @returns {string}
  */
 function inferExtension(filename) {
   const filenameNor = path.normalize(filename);
   const ext = path.extname(filenameNor);
   if (ext) return ext;
-  const files = fs.readdirSync(path.dirname(filenameNor))
+  const files = fs.readdirSync(path.dirname(filenameNor));
 
   const name = path.basename(filenameNor);
   return path.join(path.dirname(filenameNor), files.find((iFile) => {
-    if (noExtension(iFile) == name)
+    if (noExtension(iFile) == name) {
       return true;
+    }
   }));
 }
 
@@ -199,7 +204,8 @@ function noExtension(filename) {
 
 /**
  * The jsdocCommentFound event is fired whenever a JSDoc comment is found.
- * All file infos are now populated; replace typedef symbols with their module counterparts.
+ * All file infos are now populated; replace typedef symbols with their
+ * module counterparts.
  *
  * @param {DocCommentFoundEvent} e The event.
  */
@@ -211,9 +217,9 @@ function jsdocCommentFound(e) {
   e.comment = e.comment.replace(typeRegex, (typeExpr) => {
     return typeExpr.replace(identifiers, (identifier) => {
       return (fileInfo.moduleId && typeDefsSet.has(identifier)) ?
-        `module:${fileInfo.moduleId}~${identifier}` : 
+        `module:${fileInfo.moduleId}~${identifier}` :
         identifier;
-    })
+    });
   });
 }
 
