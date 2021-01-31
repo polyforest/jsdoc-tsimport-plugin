@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "strictFunctionTypes": true,
+        "checkJs": true,
+        "resolveJsonModule": true,
+        "moduleResolution": "node"
+    },
+    "exclude": [
+        "node_modules",
+        "**/node_modules/*",
+        "**/dist/*"
+    ]
+}

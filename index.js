@@ -19,19 +19,104 @@ const absSrcDirs = env.opts._.map((iSrcDir) => path.join(env.pwd, iSrcDir));
  */
 
 /**
- * A regex to find typedef imports.
- * Contains two groups, the path and the symbol name.
+ * A regex to capture all doc comments.
  */
-// eslint-disable-next-line max-len
-const typedefRegex = /\/\*\*\s*@typedef\s+{\s*([!?]?)import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)\}\s*([\w-\$]*)\s*\*\//g;
-
-// eslint-disable-next-line max-len
-const importRegex = /(\@\w+\s*){\s*([!?]?)import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)\}/g;
+const docCommentsRegex = /\/\*\*\s*(?:[^\*]|(?:\*(?!\/)))*\*\//g
 
 /**
- * @type {Map<string, Map<string, string>>}
+ * Find the module name.
  */
-const fileToReplacements = new Map();
+const moduleNameRegex = /@module\s+([\w\/]+)?/;
+
+/**
+ * Finds typedefs
+ */
+const typedefRegex = /@typedef\s*(?:\{[^}]*\})\s*([\w-\$]*)/g;
+
+
+/**
+ * Finds a ts import.
+ */
+const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
+
+const typeRegex = /\{[^}]*\}/g
+
+const identifiers = /([\w-\$]+)/g
+
+/**
+ * @typedef {object} FileInfo
+ * @property {string} filename
+ * @property {?string} moduleId
+ * @property {string[]} typedefs
+ */
+
+/**
+ * A map of filenames to module ids.
+ * 
+ * @type {Map<string, FileInfo>}
+ */
+const fileInfos = new Map();
+
+/**
+ * A map of moduleId to type definition ids.
+ * 
+ * @type {Map<string, Set<string>>}
+ */
+const moduleToTypeDefs = new Map();
+
+/**
+ * Retrieves and caches file information for this plugin.
+ * 
+ * 
+ * @param {string} filename 
+ * @param {?string} source 
+ * @returns {!FileInfo}
+ */
+function getFileInfo(filename, source = null) {
+  const filenameNor = path.normalize(filename);
+  if (fileInfos.has(filenameNor)) return fileInfos.get(filenameNor)
+  const fileInfo = /** @type {FileInfo} */ ({
+    moduleId: null, typedefs: [], filename: filenameNor
+  });
+
+  const s = source || (fs.readFileSync(filenameNor).toString());
+  s.replace(docCommentsRegex, (comment) => {
+    if (!fileInfo.moduleId) {
+      // Searches for @module doc comment
+      const moduleNameMatch = comment.match(moduleNameRegex);
+      if (moduleNameMatch) {
+        if (!moduleNameMatch[1]) {
+          // @module tag with no module name; calculate the implicit module id.
+          const srcDir = absSrcDirs.find((iSrcDir) => filenameNor.startsWith(iSrcDir));
+          fileInfo.moduleId = noExtension(filenameNor)
+            .slice(srcDir.length + 1).replace(/\\/g, '/');
+        } else {
+          fileInfo.moduleId = moduleNameMatch[1];
+        }
+      }
+    }
+    // Add all typedefs within the file.
+    comment.replace(typedefRegex, (_substr, defName) => {
+      fileInfo.typedefs.push(defName);
+      return '';
+    })
+    return '';
+  });
+  if (!fileInfo.moduleId) {
+    fileInfo.moduleId = '';
+  }
+
+  // Keep a list of typedefs per module.
+  if (!moduleToTypeDefs.has(fileInfo.moduleId)) {
+    moduleToTypeDefs.set(fileInfo.moduleId, new Set());
+  }
+  const typeDefsSet = moduleToTypeDefs.get(fileInfo.moduleId);
+  fileInfo.typedefs.forEach((item) => { typeDefsSet.add(item) });
+
+  fileInfos.set(filenameNor, fileInfo);
+  return fileInfo
+}
+
 
 /**
  * The beforeParse event is fired before parsing has begun.
@@ -39,49 +124,67 @@ const fileToReplacements = new Map();
  * @param {FileEvent} e The event.
  */
 function beforeParse(e) {
-  const toReplace = /** @type {Map<string, string>} */ new Map();
-  e.source = e.source.replace(typedefRegex,
-    (_substring, opts, relImportPath, symbolName, aliasName) => {
-      const moduleName = importToModuleId(e.filename, relImportPath);
-      toReplace.set(aliasName,
-        `${opts}{module:${moduleName}~${symbolName}}`);
-      return '';
-    });
-  // Replace inline imports
-  e.source = e.source.replace(importRegex,
-    (_substring, tag, opts, relImportPath, symbolName) => {
-      const moduleName = importToModuleId(e.filename, relImportPath);
-      return `${tag}{${opts}module:${moduleName}~${symbolName}}`;
-    });
-  fileToReplacements.set(e.filename, toReplace);
-};
+  const fileInfo = getFileInfo(e.filename, e.source);
 
-const moduleNameRegex = /\/\*\*\s*\@module\s+([\w\/]+)\s+\*\//g;
+  // Find all doc comments (unfortunately needs to be done here and not
+  // in jsDocCommentFound or there will be errors)
+  e.source = e.source.replace(docCommentsRegex,
+    (substring) => {
+      let newComment = substring.replace(importRegex, (_substring2, relImportPath, symbolName) => {
+        const moduleId = getModuleId(e.filename, relImportPath);
+        return (moduleId) ? `module:${moduleId}~${symbolName}` : symbolName;
+      })
+      return newComment;
+    });
+
+};
 
 /**
  * Converts a relative path to a module identifier.
  *
- * @param {string} filename The name of the file doing the import.
- * @param {string} relImportPath The relative path of the import.
+ * @param {string} filename The normalized path of the file doing the import.
+ * @param {string} relImportPath The import string.
  * @returns {string} The module id.
  */
-function importToModuleId(filename, relImportPath) {
+function getModuleId(filename, relImportPath) {
   if (!relImportPath.startsWith('.')) {
     // Not a relative import.
     return relImportPath;
   }
-  const absPath = path.normalize(
-    path.join(path.dirname(filename), noExtension(relImportPath)));
-  // Check if the file has a specified module name, defined by a @module
-  // doc comment, otherwise, use the inferred one based on filename.
-  const ext = path.extname(relImportPath) || path.extname(filename) || '.js';
-  const m = moduleNameRegex.exec(fs.readFileSync(absPath + ext).toString());
-  if (m == null) {
-    const srcDir = absSrcDirs.find((iSrcDir) => filename.startsWith(iSrcDir));
-    return absPath.slice(srcDir.length + 1);
-  } else {
-    return m[1];
-  }
+
+  const p = relPath(filename, relImportPath);
+  const absPath = inferExtension(p);
+  return getFileInfo(absPath).moduleId;
+}
+
+/**
+ * Returns the normalized, absolute path of `relative` to `root.
+ *
+ * @param {string} root 
+ * @param {string} relative 
+ */
+function relPath(root, relative) {
+  if (path.isAbsolute(relative)) return relative;
+  return path.normalize(
+    path.join(path.dirname(root), relative));
+}
+
+/**
+ * Given a filename, if there is no extension, scan the files for the most likely match.
+ *
+ * @param {string} filename 
+ */
+function inferExtension(filename) {
+  const filenameNor = path.normalize(filename);
+  const ext = path.extname(filenameNor);
+  if (ext) return ext;
+  const files = fs.readdirSync(path.dirname(filenameNor))
+
+  const name = path.basename(filenameNor);
+  return path.join(path.dirname(filenameNor), files.find((iFile) => {
+    if (noExtension(iFile) == name)
+      return true;
+  }));
 }
 
 /**
@@ -96,15 +199,24 @@ function noExtension(filename) {
 
 /**
  * The jsdocCommentFound event is fired whenever a JSDoc comment is found.
+ * All file infos are now populated; replace typedef symbols with their module counterparts.
  *
  * @param {DocCommentFoundEvent} e The event.
  */
 function jsdocCommentFound(e) {
-  fileToReplacements.get(e.filename).forEach((value, key) => {
-    // Replace typedef aliases
-    e.comment = e.comment.replace(new RegExp(`\{\s*${key}\\s*}`, 'g'), value);
+  const fileInfo = getFileInfo(e.filename);
+  const typeDefsSet = moduleToTypeDefs.get(fileInfo.moduleId);
+  if (!typeDefsSet) return;
+
+  e.comment = e.comment.replace(typeRegex, (typeExpr) => {
+    return typeExpr.replace(identifiers, (identifier) => {
+      return (fileInfo.moduleId && typeDefsSet.has(identifier)) ?
+        `module:${fileInfo.moduleId}~${identifier}` : 
+        identifier;
+    })
   });
 }
+
 
 exports.handlers = {
   beforeParse: beforeParse,
