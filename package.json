@@ -1,6 +1,6 @@
 {
   "name": "jsdoc-tsimport-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A JSDoc plugin to support the typescript module import syntax.",
   "main": "index.js",
   "scripts": {
