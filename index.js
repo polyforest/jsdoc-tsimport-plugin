@@ -41,7 +41,7 @@ const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
 
 const typeRegex = /\{[^}]*\}/g;
 
-const identifiers = /([\w-\$]+)/g;
+const identifiers = /([\w-\$\.]+)/g;
 
 /**
  * @typedef {object} FileInfo
