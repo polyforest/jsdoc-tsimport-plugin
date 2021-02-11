@@ -78,7 +78,8 @@ function getFileInfo(filename, source = null) {
     moduleId: null, typedefs: [], filename: filenameNor,
   });
 
-  const s = source || (fs.readFileSync(filenameNor).toString());
+  const s = source || ((fs.existsSync(filenameNor)) ?
+  fs.readFileSync(filenameNor).toString() : '');
   s.replace(docCommentsRegex, (comment) => {
     if (!fileInfo.moduleId) {
       // Searches for @module doc comment
@@ -172,24 +173,27 @@ function relPath(root, relative) {
 }
 
 /**
- * Given a filename, if there is no extension, scan the files for the 
+ * Given a filename, if there is no extension, scan the files for the
  * most likely match.
  *
- * @param {string} filename
- * @returns {string}
+ * @param {string} filename The filename with or without an
+ * extension to resolve.
+ * @returns {string} The path to the resolved file.
  */
 function inferExtension(filename) {
   const filenameNor = path.normalize(filename);
   const ext = path.extname(filenameNor);
-  if (ext) return ext;
+  if (ext && fs.existsSync(filename)) return ext;
   const files = fs.readdirSync(path.dirname(filenameNor));
 
   const name = path.basename(filenameNor);
-  return path.join(path.dirname(filenameNor), files.find((iFile) => {
+  const foundFile = files.find((iFile) => {
     if (noExtension(iFile) == name) {
       return true;
     }
-  }));
+  });
+  if (foundFile === undefined) return filename;
+  return path.join(path.dirname(filenameNor), foundFile);
 }
 
 /**
