@@ -37,11 +37,15 @@ const typedefRegex = /@typedef\s*(?:\{[^}]*\})\s*([\w-\$]*)/g;
 /**
  * Finds a ts import.
  */
-const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
+const importRegex = /import\(['"](@?[\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
 
 const typeRegex = /\{[^}]*\}/g;
 
 const identifiers = /([\w-\$\.]+)/g;
+
+const typeIntersectionRegex = /\{([^}]*( *& *)?)+\}/g;
+
+const intersectionIdentifiers = /( *)&( *)/g;
 
 /**
  * @typedef {object} FileInfo
@@ -78,8 +82,19 @@ function getFileInfo(filename, source = null) {
     moduleId: null, typedefs: [], filename: filenameNor,
   });
 
-  const s = source || ((fs.existsSync(filenameNor)) ?
-  fs.readFileSync(filenameNor).toString() : '');
+  // Pull the stat for the target file path.
+  const stats = fs.statSync(filenameNor);
+  // If it is a directory, target the index, otherwise,
+  // target the normalized file.
+  const targetFile = stats.isDirectory() ?
+        path.join(filenameNor, 'index') : filenameNor;
+  // If it was a directory, make sure the index exist, otherwise,
+  // use the stats object,
+  const targetExists = stats.isDirectory() ?
+        fs.existsSync(targetFile) : stats.isFile();
+
+  const s = source ||
+        (targetExists ? fs.readFileSync(targetFile).toString() : '');
   s.replace(docCommentsRegex, (comment) => {
     if (!fileInfo.moduleId) {
       // Searches for @module doc comment
@@ -219,6 +234,16 @@ function jsdocCommentFound(e) {
   if (!typeDefsSet) return;
 
   e.comment = e.comment.replace(typeRegex, (typeExpr) => {
+    // Check if the typeExpr contains any intersections and
+    // replace them with unions.
+    typeExpr = typeExpr.replace(typeIntersectionRegex, (typeIntersectionExpr) =>
+      typeIntersectionExpr.replace(intersectionIdentifiers, '$1|$2'),
+    );
+    // If the typeExpr includes 'module:', don't try to replace
+    // it with the typeDefSet as we likely already did earlier.
+    if (typeExpr.includes('module:')) {
+      return typeExpr;
+    }
     return typeExpr.replace(identifiers, (identifier) => {
       return (fileInfo.moduleId && typeDefsSet.has(identifier)) ?
         `module:${fileInfo.moduleId}~${identifier}` :
@@ -226,7 +251,6 @@ function jsdocCommentFound(e) {
     });
   });
 }
-
 
 exports.handlers = {
   beforeParse: beforeParse,
