@@ -37,7 +37,7 @@ const typedefRegex = /@typedef\s*(?:\{[^}]*\})\s*([\w-\$]*)/g;
 /**
  * Finds a ts import.
  */
-const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
+const importRegex = /import\(['"](\@?[\.\/_a-zA-Z0-9-\$]*)(?:\.js)?['"]\)\.?([_a-zA-Z0-9-\$]*)?/g;
 
 const typeRegex = /\{[^}]*\}/g;
 
@@ -136,7 +136,7 @@ function beforeParse(e) {
       return substring.replace(importRegex,
         (_substring2, relImportPath, symbolName) => {
         const moduleId = getModuleId(e.filename, relImportPath);
-        return (moduleId) ? `module:${moduleId}~${symbolName}` : symbolName;
+        return (moduleId) ? `module:${moduleId}${symbolName?"~"+symbolName:""}` : symbolName;
       });
     });
 };
