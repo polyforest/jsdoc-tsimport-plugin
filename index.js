@@ -37,7 +37,7 @@ const typedefRegex = /@typedef\s*(?:\{[^}]*\})\s*([\w-\$]*)/g;
 /**
  * Finds a ts import.
  */
-const importRegex = /import\(['"]([\.\/\w-\$]*)(?:\.js)?['"]\)\.([\w-\$]*)/g;
+const importRegex = /import\(['"](\@?[\.\/_a-zA-Z0-9-\$]*)(?:\.js)?['"]\)\.?([_a-zA-Z0-9-\$]*)?/g;
 
 const typeRegex = /\{[^}]*\}/g;
 
