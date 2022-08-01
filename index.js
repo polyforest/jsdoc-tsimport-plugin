@@ -137,7 +137,9 @@ function beforeParse(e) {
         (_substring2, relImportPath, symbolName) => {
         const moduleId = getModuleId(e.filename, relImportPath);
         if (symbolName === 'default') {
-          return path.basename(relImportPath, path.extname(relImportPath));
+          return (moduleId) ?
+            `module:${moduleId}` :
+            path.basename(relImportPath, path.extname(relImportPath));
         }
         return (moduleId) ? `module:${moduleId}${symbolName?"~"+symbolName:""}` : symbolName;
       });
