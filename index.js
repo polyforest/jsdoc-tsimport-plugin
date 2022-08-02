@@ -136,6 +136,11 @@ function beforeParse(e) {
       return substring.replace(importRegex,
         (_substring2, relImportPath, symbolName) => {
         const moduleId = getModuleId(e.filename, relImportPath);
+        if (symbolName === 'default') {
+          return (moduleId) ?
+            `module:${moduleId}` :
+            path.basename(relImportPath, path.extname(relImportPath));
+        }
         return (moduleId) ? `module:${moduleId}${symbolName?"~"+symbolName:""}` : symbolName;
       });
     });
