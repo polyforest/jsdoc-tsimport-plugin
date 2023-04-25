@@ -224,6 +224,7 @@ function jsdocCommentFound(e) {
   if (!typeDefsSet) return;
 
   e.comment = e.comment.replace(typeRegex, (typeExpr) => {
+    typeExpr = typeExpr.replace(/\[["'](.*)['"]\]/g, ".$1"); 
     return typeExpr.replace(identifiers, (identifier) => {
       return (fileInfo.moduleId && typeDefsSet.has(identifier)) ?
         `module:${fileInfo.moduleId}~${identifier}` :
